@@ -1,0 +1,314 @@
+:root {
+    --poker-table-width: 80vw;
+    --poker-table-height: 25vw;
+
+    --blur-amount: 10px;
+
+    --card-height: 4.5vw;
+    --card-width: 3.2vw;
+    --card-font-size: 1.7vw;
+
+    --default-padding: 10px;
+}
+
+.poker-table-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100%;
+}
+
+.poker-table {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: calc(var(--poker-table-height) / 2);
+    width: var(--poker-table-width); /* 80% of the viewport width */
+    height: var(--poker-table-height); /* Half of the viewport height */
+    position: relative;
+    margin-left: auto; /* Center the table on the page */
+    margin-right: auto; /* Center the table on the page */
+    backdrop-filter: blur(var(--blur-amount));
+    background-color: rgba(0, 0, 0, 0.1);
+    border: 1px solid black;
+    /*margin-top: 200px;*/
+}
+
+.community-cards {
+    display: flex;
+    position: absolute;
+    justify-content: center;
+    align-items: center;
+}
+
+.table-pot-420 {
+    color: white;
+    font-weight: bold;
+    display: flex;
+    height: var(--card-height);
+    width: var(--card-height);
+    border-radius: calc(var(--card-height) / 2);
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.card {
+    width: var(--card-width); /* Adjust the size as needed */
+    height: var(--card-height); /* Adjust the size as needed */
+    margin: 0.5vh;
+    background-color: #ffffff; /* TCard background */
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    justify-content: space-between; /* Distributes children evenly */
+    align-items: center;
+    border-radius: calc(var(--card-width) / 8);
+    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+    font-family: 'Futura', sans-serif;
+    position: relative;
+    border: 1px solid black; /* TCard border */
+    overflow: hidden; /* Ensures content does not overflow */
+    padding: 3px 0; /* Vertical padding at the very top and bottom */
+}
+
+.card.hidden {
+    padding: 0;
+}
+
+.card-value,
+.card-suit {
+    width: 100%; /* Full width */
+    text-align: center;
+    overflow: hidden; /* Ensures content does not overflow */
+    white-space: nowrap; /* Prevents wrapping */
+}
+
+.card-value {
+    height: 50%; /* Half the height of the card */
+    font-size: var(--card-font-size); /* Adjust as needed */
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Align to bottom of the top half */
+}
+
+.card-suit {
+    height: 50%; /* Half the height of the card */
+    font-size: var(--card-font-size); /* Adjust as needed */
+    color: red; /* Default color, it changes for different suits */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align to top of the bottom half */
+}
+
+.hearts,
+.diamonds {
+    color: red;
+}
+
+.clubs,
+.spades {
+    color: black;
+}
+
+.card-back {
+    width: 100%;
+    height: 100%;
+    background-color: #1a1a1a; /* Dark color for card back */
+    /*border-radius: inherit;*/
+    /* Add more styling for the card back if needed */
+}
+
+/*!* Add media query for smaller screens to adjust card size *!*/
+/*@media (max-width: 768px) {*/
+/*    .card {*/
+/*        width: 10vh;*/
+/*        height: 14vh;*/
+/*    }*/
+/*    .card-rank,*/
+/*    .card-suit {*/
+/*        font-size: 8vh; !* Adjust as needed *!*/
+/*    }*/
+/*}*/
+
+.players-container {
+    height: 100%;
+    width: 100%;
+    border-radius: calc(var(--poker-table-height) / 2);
+    position: relative;
+}
+
+.player-container {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    /*width: calc(4 * var(--card-width));*/
+}
+
+.player-container.human-player {
+    border: 2px solid var(--color-green-light);
+    border-radius: calc(var(--card-width) / 2);
+    padding: var(--default-padding);
+    backdrop-filter: blur(10px);
+    background-color: var(--color-dark-grey);
+    z-index: 100;
+}
+
+.player-container.thinking {
+    border: 2px solid var(--color-yellow-light);
+    border-radius: calc(var(--card-width) / 2);
+    padding: var(--default-padding);
+    backdrop-filter: blur(10px);
+    background-color: var(--color-dark-grey);
+    z-index: 100;
+}
+
+.player {
+    /*position: absolute;*/
+    width: fit-content;
+    min-width: calc(var(--card-width) * 3);
+    /*height: calc(3 * var(--card-height));*/
+    border-radius: calc(var(--card-width) / 2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    line-height: 30px; /* Vertically center the text */
+    border: 1px solid #000;
+    /*border-radius: 15px; !* Half of the player element height for rounded corners *!*/
+    background-color: white;
+    padding: var(--default-padding);
+    color: black;
+}
+
+.player-folded {
+    background-color: var(--color-dark-grey);
+    color: white;
+}
+
+.folded-text {
+    font-style: italic;
+}
+
+.player-cards {
+    display: flex;
+    flex-direction: row;
+    margin-top: 10px;
+}
+
+.player-position {
+    display: flex;
+    color: white;
+    font-weight: bold;
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
+    border: 3px solid white;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-position.dealer {
+    background-color: white;
+    color: var(--color-dark-grey);
+}
+
+.player-stack-and-action-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.player-action {
+    width: fit-content;
+    font-weight: bold;
+    color: white;
+}
+
+.all_in {
+    color: var(--color-red);
+}
+
+.check {
+    color: white;
+}
+
+.call,
+.bet {
+    color: var(--color-yellow);
+}
+
+.raise {
+    color: var(--color-green);
+}
+
+.player-stack {
+    width: fit-content;
+    color: white;
+}
+
+.player-actions-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: right;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.player-actions-bet-container {
+    display: flex;
+    flex-direction: row;
+    align-content: space-between;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--default-padding);
+}
+
+.action-button {
+    /*margin-left: auto;*/
+    height: fit-content;
+    padding: 5px;
+    background-color: var(--color-green);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: calc(var(--font-size) * 0.85);
+}
+
+.fold-button {
+    margin-top: 10px;
+    background-color: var(--color-red);
+}
+
+.check-button {
+    margin-top: 10px;
+    background-color: var(--color-yellow);
+}
+
+.slider-container {
+    position: relative;
+    /*width: calc(var(--card-width) * 2);*/
+    margin-top: 20px;
+    margin-right: 10px;
+}
+
+.slider {
+    /*width: 100%;*/
+}
+
+.slider-text {
+    position: absolute;
+    bottom: 100%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    line-height: var(--font-size);
+    background-color: white;
+    border-radius: 5px;
+}
