@@ -1,5 +1,5 @@
 import { ActionButton } from './ActionButton'
-import { TOnAction } from '../PlayerActions'
+import { TOnAction } from '../player/PlayerActions'
 
 export function CallButton({
     currentHighBet,

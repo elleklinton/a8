@@ -1,3 +1,5 @@
+import { TPlayerWinnings } from './ui/on-action'
+
 export type TCardSuit = 'hearts' | 'diamonds' | 'clubs' | 'spades'
 export type TCardValue =
     | '2'
@@ -36,7 +38,7 @@ export const ALL_RANKS: TCardValue[] = [
     '2',
 ]
 
-export type TPlayerState = 'active' | 'folded' | 'all-in'
+export type TPlayerState = 'active' | 'folded' | 'all-in' | 'out'
 export type TPlayerActionType =
     | 'all_in'
     | 'check'
@@ -47,10 +49,12 @@ export type TPlayerActionType =
     | 'small_blind'
     | 'big_blind'
     | 'table_event'
+    | 'dealt_cards'
+    | 'new_round'
 export type TPlayerAction = {
     type: TPlayerActionType
     amount?: number
-    table_cards_dealt?: TCard[]
+    cards_dealt?: TCard[]
     isIncompleteRaise?: boolean
 }
 
@@ -72,7 +76,10 @@ export interface TGameState {
     players: TPlayer[]
     communityCards: TCard[]
     action_on: number // playerIndex of player where action is on. -1 for house action (flop, turn, river)
+    big_blind_position: number
     dealer_position: number // playerIndex of dealer
+    small_blind_position: number
     big_blind: number
     round_history: TPlayerAction[]
+    winners: TPlayerWinnings
 }

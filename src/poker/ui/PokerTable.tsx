@@ -1,25 +1,22 @@
-import React, { useEffect } from 'react'
+import React, { ReactElement, useEffect, useRef } from 'react'
 import { TGameState } from '../types'
 import Card from './Card'
 import './styles.css'
-import Player, { TPlayerPosition } from './Player'
+import Player, { TPlayerPosition } from './player/Player'
 import { getInitialGameState } from '../game-engine/initial-game-state'
-import { onAction } from './on-action'
+import { isFinalRoundOver, onAction } from './on-action'
+import { isBettingRoundOver } from '../game-engine/game-state-utils'
 
 function positionOfPlayer(
-    index: number,
-    totalPlayers: number,
-    dealerPosition: number
+    playerIndex: number,
+    gameState: TGameState
 ): TPlayerPosition {
-    const smallBlindPosition = (dealerPosition + 1) % totalPlayers
-    const bigBlindPosition = (dealerPosition + 2) % totalPlayers
-
-    switch (index) {
-        case dealerPosition:
+    switch (playerIndex) {
+        case gameState.dealer_position:
             return 'dealer'
-        case smallBlindPosition:
+        case gameState.small_blind_position:
             return 'small_blind'
-        case bigBlindPosition:
+        case gameState.big_blind_position:
             return 'big_blind'
         default:
             return undefined
@@ -111,11 +108,7 @@ export default function PokerTable() {
                                 playerIndex={index}
                                 gameState={gameState}
                                 setGameState={setGameState}
-                                position={positionOfPlayer(
-                                    index,
-                                    gameState.players.length,
-                                    gameState.dealer_position
-                                )}
+                                position={positionOfPlayer(index, gameState)}
                                 showCardsOnTop={cardsOnTop}
                                 allowedToRaise={allowedToRaise}
                                 currentHighBet={currentHighBet}

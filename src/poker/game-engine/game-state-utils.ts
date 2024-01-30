@@ -1,15 +1,40 @@
 import { TCard, TGameState, TPlayer, TPlayerActionType } from '../types'
-import { TOnAction } from '../ui/PlayerActions'
+import { getFreshShuffledDeck } from './deck'
 
 export function dealCards(gameState: TGameState): TGameState {
-    const deck = gameState.deck
+    const deck = getFreshShuffledDeck()
+    gameState.deck = deck
+    gameState.communityCards = []
+
+    gameState.players.map((player, playerIndex) => {
+        player.cards = []
+        player.showCards = playerIndex === 0
+        if (player.stackSize !== 0) {
+            player.state = 'active'
+        }
+    })
+
+    const nonOutPlayers = gameState.players.filter((p) => p.state !== 'out')
 
     let playerToDeal =
         (gameState.dealer_position + 1) % gameState.players.length
-    let cardsToDeal = 2 * gameState.players.length
+    let cardsToDeal = 2 * nonOutPlayers.length
 
     while (cardsToDeal > 0) {
+        if (gameState.players[playerToDeal].state === 'out') {
+            playerToDeal = (playerToDeal + 1) % gameState.players.length
+            continue
+        }
         gameState.players[playerToDeal].cards.push(deck.pop()!)
+        if (gameState.players[playerToDeal].cards.length === 2) {
+            gameState.round_history = [
+                ...gameState.round_history,
+                {
+                    type: 'dealt_cards',
+                    cards_dealt: [...gameState.players[playerToDeal].cards],
+                },
+            ]
+        }
         playerToDeal = (playerToDeal + 1) % gameState.players.length
         cardsToDeal--
     }
@@ -49,6 +74,10 @@ export function placePlayerBet(
 
     const betAmount = Math.min(amount, player.stackSize + alreadyBet)
 
+    if (betAmount === player.stackSize) {
+        betType = 'all_in'
+    }
+
     player.stackSize -= newBet
     player.currentBet = betAmount
     player.action = {
@@ -58,19 +87,10 @@ export function placePlayerBet(
     }
 }
 
-export function placeBlinds(
-    gameState: TGameState,
-    setGameState: (a: TGameState) => void
-): TGameState {
-    const smallBlindPlayer =
-        gameState.players[
-            (gameState.dealer_position + 1) % gameState.players.length
-        ]
+export function placeBlinds(gameState: TGameState): TGameState {
+    const smallBlindPlayer = gameState.players[gameState.small_blind_position]
 
-    const bigBlindPlayer =
-        gameState.players[
-            (gameState.dealer_position + 2) % gameState.players.length
-        ]
+    const bigBlindPlayer = gameState.players[gameState.big_blind_position]
 
     placePlayerBet(
         smallBlindPlayer,
@@ -80,13 +100,14 @@ export function placeBlinds(
     )
     placePlayerBet(bigBlindPlayer, gameState.big_blind, 'big_blind', false)
 
-    const rv = {
+    return {
         ...gameState,
     }
+}
 
-    setGameState(rv)
-
-    return rv
+export function initializeRound(gameState: TGameState) {
+    placeBlinds(gameState)
+    dealCards(gameState)
 }
 
 export function playerCanAct(
@@ -110,7 +131,7 @@ export function playerCanAct(
         return false
     } else {
         // Player already has action, so check if they can act again
-        if ((player.action.amount ?? 0) < currentHighBet) {
+        if ((player.currentBet ?? 0) < currentHighBet) {
             // Player can act if they are not all in, but are in for less than current bet
             if (player.action.type !== 'all_in') {
                 return true

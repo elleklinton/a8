@@ -1,14 +1,16 @@
 import { TGameState, TPlayer, TPlayerAction } from '../types'
 import {
     dealTableCards,
+    initializeRound,
     isBettingRoundOver,
 } from '../game-engine/game-state-utils'
-import { getCurrentBettingState } from './PokerTable'
+import { PokerRoundResult } from '../game-engine/poker-hand-calculations/objects/poker_round/poker-round-result'
 
-function collectBets(gameState: TGameState) {
+function commitBets(gameState: TGameState) {
     for (const player of gameState.players) {
-        if (player.action?.amount !== undefined && player.action.amount > 0) {
-            player.committedBet += player.action.amount
+        const playerBetAmount = player.currentBet ?? 0
+        if (playerBetAmount > 0) {
+            player.committedBet += playerBetAmount
             player.currentBet = 0
         }
         player.action = undefined
@@ -68,7 +70,7 @@ function updatePlayerStatesOnAction(
             player.state = 'all-in'
             return currentHighBet
         case 'table_event':
-            // console.log('table_event', action.table_cards_dealt)
+            // console.log('table_event', action.cards_dealt)
             return currentHighBet
         case 'big_blind':
             // console.log(`${player.name} (${playerIndex}) posts big blind`)
@@ -80,23 +82,200 @@ function updatePlayerStatesOnAction(
     }
 }
 
+type TPot420 = {
+    playersInPot: number[]
+    winnableAmount: number
+}
+
+function potsToWin(gameState: TGameState): TPot420[] {
+    const pots: TPot420[] = []
+    let playerCommitAmounts = gameState.players
+        .filter((p) => p.state !== 'folded')
+        .map((p) => p.committedBet)
+    // .filter((p) => p > 0)
+    playerCommitAmounts = [...Array.from(new Set(playerCommitAmounts))]
+    playerCommitAmounts.sort((a, b) => a - b) // sort playerCommitAmounts with smallest first
+
+    let currentPlayerCommit = 0
+
+    while (playerCommitAmounts.length > 0) {
+        const currentPotPerPlayer =
+            playerCommitAmounts.shift()! - currentPlayerCommit
+        currentPlayerCommit += currentPotPerPlayer
+
+        pots.push({
+            playersInPot: [],
+            winnableAmount: 0,
+        })
+
+        gameState.players.map((player, i) => {
+            const betFromPlayer = Math.min(
+                player.committedBet,
+                currentPotPerPlayer
+            )
+            pots[pots.length - 1].winnableAmount += betFromPlayer
+            player.committedBet -= betFromPlayer
+
+            const playerInPot = betFromPlayer > 0 && player.state !== 'folded'
+
+            if (playerInPot) {
+                pots[pots.length - 1].playersInPot.push(i)
+            }
+        })
+    }
+
+    return pots
+}
+
+export type TPlayerWinning = {
+    winAmount: number
+    winningHand: string
+}
+
+export type TPlayerWinnings = {
+    [playerIndex: number]: TPlayerWinning
+}
+
+function calculateWinnings(gameState: TGameState): TPlayerWinnings {
+    const pots = potsToWin(gameState)
+    const playerWinnings: TPlayerWinnings = {}
+
+    for (const pot of pots) {
+        const roundResult = PokerRoundResult.fromGameState(
+            gameState,
+            pot.playersInPot
+        )
+        const winners = roundResult.winners
+        const amountPerWinner = Math.round(pot.winnableAmount / winners.length)
+        for (const winner of winners) {
+            const player = gameState.players[winner.id]
+            console.log(
+                `[WINNER] Player ${player.name} wins ${amountPerWinner} with ${winner.poker_hand.toString()}`
+            )
+            playerWinnings[winner.id] = {
+                winAmount:
+                    (playerWinnings[winner.id]?.winAmount ?? 0) +
+                    amountPerWinner,
+                winningHand: winner.poker_hand.hand_name,
+            }
+        }
+    }
+
+    return playerWinnings
+}
+
+function distributeWinnings(
+    gameState: TGameState,
+    playerWinnings: TPlayerWinnings
+) {
+    gameState.players.map((player, i) => {
+        player.stackSize += playerWinnings[i]?.winAmount ?? 0
+        player.committedBet = 0
+    })
+}
+
+function nextActivePlayerAfter(starting_on: number, gameState: TGameState) {
+    let nextPlayer = (starting_on + 1) % gameState.players.length
+    while (gameState.players[nextPlayer].state === 'out') {
+        nextPlayer = (nextPlayer + 1) % gameState.players.length
+    }
+    return nextPlayer
+}
+
+function calculateNextRoundPositions(gameState: TGameState) {
+    const nextBigBlind = nextActivePlayerAfter(
+        gameState.big_blind_position,
+        gameState
+    )
+    const nextSmallBlind = gameState.big_blind_position
+    const nextDealer = gameState.small_blind_position
+    const actionOn = nextActivePlayerAfter(nextBigBlind, gameState)
+
+    return {
+        actionOn,
+        nextBigBlind,
+        nextSmallBlind,
+        nextDealer,
+    }
+}
+
 function onFinalCompletion(newState: TGameState) {
     // Mutates newState
-    console.log('Final round of betting complete!')
+    console.log(
+        'Final round of betting complete! Showing player cards and updating action_on to table action'
+    )
+
+    // First, show all remaining cards
     for (const player of newState.players) {
         if (player.state !== 'folded') {
             player.showCards = true
         }
-        newState.action_on = -1
+    }
+
+    // Set table as action
+    newState.action_on = -1
+
+    // Distribute winnings
+    const playerWinnings = calculateWinnings(newState)
+    distributeWinnings(newState, playerWinnings)
+
+    newState.winners = playerWinnings
+
+    for (const player of newState.players) {
+        if (player.stackSize === 0) {
+            player.state = 'out'
+        }
     }
 }
 
-function onRoundCompletion(
+export function startNextRound(
+    gameState: TGameState,
+    setGameState: (t: TGameState) => void
+) {
+    // Update positions
+    const { nextDealer, nextSmallBlind, nextBigBlind, actionOn } =
+        calculateNextRoundPositions(gameState)
+    gameState.dealer_position = nextDealer
+    gameState.small_blind_position = nextSmallBlind
+    gameState.big_blind_position = nextBigBlind
+    gameState.action_on = actionOn
+
+    gameState.winners = {}
+    gameState.round_history = [
+        ...gameState.round_history,
+        {
+            type: 'new_round',
+        },
+    ]
+
+    initializeRound(gameState)
+
+    setGameState({
+        ...gameState,
+    })
+}
+
+export function isFinalRoundOver(
+    gameState: TGameState,
+    currentHighBet: number
+) {
+    return (
+        isBettingRoundOver(
+            gameState.dealer_position,
+            gameState.action_on,
+            currentHighBet,
+            gameState.players,
+            gameState.communityCards.length === 0
+        ) && gameState.communityCards.length === 5
+    )
+}
+
+async function onRoundCompletion(
     newState: TGameState,
     setGameState: (gameState: TGameState) => void
-) {
+): Promise<void> {
     // Collect bets and clear actions
-    collectBets(newState)
+    commitBets(newState)
 
     const totalActivePlayers = newState.players.filter(
         (p) => p.state === 'active'
@@ -119,12 +298,20 @@ function onRoundCompletion(
         ...newState.round_history,
         {
             type: 'table_event',
-            table_cards_dealt: newCards,
+            cards_dealt: newCards,
         },
     ]
 
-    newState.action_on =
-        (newState.dealer_position + 1) % newState.players.length
+    if (totalActivePlayers === 0) {
+        console.log('All players all-in. Dealing final cards with delay')
+        newState.action_on = -1
+
+        await new Promise((res) => setTimeout(res, 300))
+
+        return onRoundCompletion(newState, setGameState)
+    }
+
+    newState.action_on = newState.small_blind_position
 }
 
 export function onAction(
@@ -160,7 +347,9 @@ export function onAction(
             (gameState.action_on + 1) % gameState.players.length
     } else {
         console.log('Betting round over')
-        onRoundCompletion(newState, setGameState)
+        onRoundCompletion(newState, setGameState).then(() => {
+            console.log('Finished onRoundCompletion')
+        })
     }
 
     setGameState({

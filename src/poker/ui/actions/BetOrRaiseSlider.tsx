@@ -1,6 +1,6 @@
 import { ChangeEventHandler, useEffect, useState } from 'react'
 import { ActionButton } from './ActionButton'
-import { TOnAction } from '../PlayerActions'
+import { TOnAction } from '../player/PlayerActions'
 
 export function Slider({
     actionName,
@@ -108,8 +108,6 @@ export function RaiseBar({
     if (stackSize < minRaiseBet) {
         return <div />
     }
-
-    console.log(value, stackSize, currentPlayerBet)
 
     return allowedToRaise ? (
         <div className="player-actions-bet-container">

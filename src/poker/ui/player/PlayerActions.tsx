@@ -1,8 +1,8 @@
-import { TPlayer, TPlayerAction } from '../types'
-import { BetBar, BetOrRaiseSlider } from './actions/BetOrRaiseSlider'
-import { CallButton } from './actions/CallButton'
-import { FoldButton } from './actions/FoldButton'
-import { CheckButton } from './actions/CheckButton'
+import { TPlayer, TPlayerAction } from '../../types'
+import { BetBar, BetOrRaiseSlider } from '../actions/BetOrRaiseSlider'
+import { CallButton } from '../actions/CallButton'
+import { FoldButton } from '../actions/FoldButton'
+import { CheckButton } from '../actions/CheckButton'
 import { useEffect } from 'react'
 
 export type TOnAction = (action: TPlayerAction) => void
@@ -36,6 +36,7 @@ export function PlayerActions({
             </div>
         )
     }
+
     return (
         <div className="player-actions-container">
             {(currentHighBet ?? 0) === currentPlayerBet && (

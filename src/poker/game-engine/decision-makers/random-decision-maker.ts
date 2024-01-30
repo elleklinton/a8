@@ -26,17 +26,13 @@ export class RandomDecisionMaker extends BaseDecisionMaker {
 
         if (currentHighBet > 0) {
             // for testing make big blind always raise and small blind always fold
-            const smallBlindIndex =
-                (gameState.dealer_position + 1) % gameState.players.length
-            const bigBlindIndex =
-                (gameState.dealer_position + 2) % gameState.players.length
-            if (playerIndex !== bigBlindIndex) {
+            if (playerIndex !== gameState.big_blind_position) {
                 allowedActions.push('fold')
-                if (playerIndex === smallBlindIndex) {
+                if (playerIndex === gameState.small_blind_position) {
                     allowedActions = allowedActions.filter((a) => a !== 'call')
                 }
             }
-            if (playerIndex === bigBlindIndex) {
+            if (playerIndex === gameState.big_blind_position) {
                 allowedActions.push('raise')
                 allowedActions = allowedActions.filter((a) => a !== 'check')
             }
@@ -56,7 +52,7 @@ export class RandomDecisionMaker extends BaseDecisionMaker {
         const actions = this.availableActions(gameState, playerIndex)
 
         // wait to simulate thinking
-        await new Promise((res) => setTimeout(res, 750))
+        await new Promise((res) => setTimeout(res, 700))
 
         if (actions.length === 0) {
             console.warn('Warning: no available actions available!!!')

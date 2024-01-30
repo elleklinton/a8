@@ -1,11 +1,19 @@
 import React, { useEffect, useRef } from 'react'
-import { TCard as CardType, TGameState, TPlayer, TPlayerAction } from '../types'
-import Card from './Card'
-import { titleCase } from '../../utils'
+import {
+    TCard as CardType,
+    TGameState,
+    TPlayer,
+    TPlayerAction,
+} from '../../types'
+import Card from '../Card'
+import { titleCase } from '../../../utils'
 import { PlayerActions } from './PlayerActions'
-import { RandomDecisionMaker } from '../game-engine/decision-makers/random-decision-maker'
+import { RandomDecisionMaker } from '../../game-engine/decision-makers/random-decision-maker'
 
-import { playerCanAct } from '../game-engine/game-state-utils'
+import { playerCanAct } from '../../game-engine/game-state-utils'
+import { PlayerPositionAndWinnings } from './PlayerPositionAndWinnings'
+import { PlayerStackAndAction } from './PlayerStackAndAction'
+import { PlayerBox } from './PlayerBox'
 
 export type TPlayerPosition = 'dealer' | 'small_blind' | 'big_blind' | undefined
 
@@ -117,6 +125,12 @@ export default function Player({
     const [playerContainerHeight, setPlayerContainerHeight] = React.useState(0)
     const isFirstRun = useRef(true)
 
+    // Don't show thinking for human player
+    const showThinkingText =
+        playerContainerClass.includes('thinking') && playerIndex !== 0
+
+    const isCurrentPlayerTurn = playerIndex === action_on
+
     useEffect(() => {
         if (playerContainerRef.current) {
             setPlayerContainerHeight(
@@ -125,81 +139,15 @@ export default function Player({
         }
     }, [action_on, playerContainerRef.current?.getBoundingClientRect().height])
 
-    const playerPositionText =
-        position === 'dealer'
-            ? 'D'
-            : position === 'small_blind'
-              ? 'SB'
-              : position === 'big_blind'
-                ? 'BB'
-                : undefined
-
-    const playerPosition = position && (
-        <div>
-            <span
-                className={
-                    'player-position' + (position === 'dealer' ? ' dealer' : '')
-                }
-            >
-                {playerPositionText}
-            </span>
-        </div>
-    )
-
-    const playerAction = player.action?.type && (
-        <span className={'player-action' + ' ' + player.action.type}>
-            {titleCase(player.action.type)}
-            {player.action.amount ? `: ${player.action.amount}` : ''}
-        </span>
-    )
-
-    const playerStack = (
-        <span className={'player-stack'}>Stack: {player.stackSize}</span>
-    )
-
-    const playerInfo = (
-        <div>
-            {/*<img src={player.avatar} alt={`${player.name}`} />*/}
-            <span>
-                {player.name}
-                {playerContainerClass.includes('thinking') && <br />}
-                {playerContainerClass.includes('thinking') && 'Thinking...'}
-                {player.state === 'folded' && (
-                    <div className="folded-text">Folded</div>
-                )}
-            </span>
-        </div>
-    )
-
-    const playerCards = player.state !== 'folded' && (
-        <div className="player-cards">
-            {player.cards.map(
-                (card: CardType, cardIndex: React.Key | null | undefined) => (
-                    <Card
-                        key={cardIndex}
-                        card={card}
-                        // Current player is playerIndex 0 so show always their cards
-                        isVisible={player.showCards || playerIndex === 0}
-                    />
-                )
-            )}
-        </div>
-    )
-
-    // Only visible if human player (playerIndex 0) and it's their turn
-    const playerActions = playerIndex === action_on && action_on === 0 && (
-        <PlayerActions
-            player={player}
-            currentHighBet={currentHighBet}
-            currentPlayerBet={player.currentBet ?? 0}
-            allowedToRaise={allowedToRaise}
-            stackSize={player.stackSize}
-            minBet={minBetOrRaiseAmount}
-            onAction={(action) => onAction(action, playerIndex)}
-        />
-    )
-
-    const isCurrentPlayerTurn = playerIndex === action_on
+    useEffect(() => {
+        if (gameState.winners[playerIndex] !== undefined) {
+            setPlayerContainerClass(baseContainerClass + ' winner')
+        } else {
+            if (playerContainerClass !== baseContainerClass) {
+                setPlayerContainerClass(baseContainerClass)
+            }
+        }
+    }, [gameState.winners[playerIndex]])
 
     // For AI players, do action automatically
     useEffect(() => {
@@ -247,9 +195,7 @@ export default function Player({
                     })
                     return
                 } else {
-                    setPlayerContainerClass(
-                        baseContainerClass + ' human-player'
-                    )
+                    setPlayerContainerClass(baseContainerClass + ' thinking')
                 }
             }
         }
@@ -259,9 +205,6 @@ export default function Player({
             }
         })
     }, [action_on, gameState.communityCards.length])
-
-    const playerClass =
-        'player' + (player.state === 'folded' ? ' player-folded' : '')
 
     return showCardsOnTop ? (
         <div
@@ -277,16 +220,24 @@ export default function Player({
                     ?.transform,
             }}
         >
-            {playerPosition}
-            <div className="player-stack-and-action-container">
-                {playerAction}
-                {playerStack}
-            </div>
-            <div className={playerClass}>
-                {playerCards}
-                {playerInfo}
-                {playerActions}
-            </div>
+            <PlayerPositionAndWinnings
+                position={position}
+                location={'top'}
+                maybeWin={gameState.winners[playerIndex]}
+            />
+            <PlayerStackAndAction player={player} stackOnTop={false} />
+            <PlayerBox
+                gameState={gameState}
+                setGameState={setGameState}
+                playerIndex={playerIndex}
+                showThinkingText={showThinkingText}
+                action_on={action_on}
+                currentHighBet={currentHighBet}
+                allowedToRaise={allowedToRaise}
+                minBetOrRaiseAmount={minBetOrRaiseAmount}
+                onAction={onAction}
+                cardsOnTop={false}
+            />
         </div>
     ) : (
         <div
@@ -302,16 +253,24 @@ export default function Player({
                     ?.transform,
             }}
         >
-            <div className={playerClass}>
-                {playerInfo}
-                {playerCards}
-                {playerActions}
-            </div>
-            <div className="player-stack-and-action-container">
-                {playerStack}
-                {playerAction}
-            </div>
-            {playerPosition}
+            <PlayerBox
+                gameState={gameState}
+                setGameState={setGameState}
+                playerIndex={playerIndex}
+                showThinkingText={showThinkingText}
+                action_on={action_on}
+                currentHighBet={currentHighBet}
+                allowedToRaise={allowedToRaise}
+                minBetOrRaiseAmount={minBetOrRaiseAmount}
+                onAction={onAction}
+                cardsOnTop={false}
+            />
+            <PlayerStackAndAction player={player} stackOnTop={true} />
+            <PlayerPositionAndWinnings
+                position={position}
+                location={'bottom'}
+                maybeWin={gameState.winners[playerIndex]}
+            />
         </div>
     )
 }
