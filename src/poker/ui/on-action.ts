@@ -124,7 +124,7 @@ function potsToWin(gameState: TGameState): TPot420[] {
         })
     }
 
-    return pots
+    return pots.filter((p) => p.winnableAmount !== 0)
 }
 
 export type TPlayerWinning = {
@@ -176,7 +176,7 @@ function distributeWinnings(
 
 function nextActivePlayerAfter(starting_on: number, gameState: TGameState) {
     let nextPlayer = (starting_on + 1) % gameState.players.length
-    while (gameState.players[nextPlayer].state === 'out') {
+    while (gameState.players[nextPlayer].stackSize === 0) {
         nextPlayer = (nextPlayer + 1) % gameState.players.length
     }
     return nextPlayer
@@ -220,12 +220,6 @@ function onFinalCompletion(newState: TGameState) {
     distributeWinnings(newState, playerWinnings)
 
     newState.winners = playerWinnings
-
-    for (const player of newState.players) {
-        if (player.stackSize === 0) {
-            player.state = 'out'
-        }
-    }
 }
 
 export function startNextRound(
@@ -247,6 +241,12 @@ export function startNextRound(
             type: 'new_round',
         },
     ]
+
+    for (const player of gameState.players) {
+        if (player.stackSize === 0) {
+            player.state = 'out'
+        }
+    }
 
     initializeRound(gameState)
 

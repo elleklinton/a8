@@ -39,11 +39,11 @@ function playerFromPersona(persona: {
 }
 
 export function getInitialGameState(nPlayers: number): TGameState {
-    let maybeOverride = TEST_GAME_STATE
-    if (maybeOverride) {
-        maybeOverride.action_on = 0
-        return maybeOverride
-    }
+    // let maybeOverride = TEST_GAME_STATE
+    // if (maybeOverride) {
+    //     maybeOverride.action_on = 0
+    //     return maybeOverride
+    // }
 
     const gameState = _.cloneDeep(INITIAL_GAME_STATE)
 

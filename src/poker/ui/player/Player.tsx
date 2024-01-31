@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { CSSProperties, useEffect, useRef } from 'react'
 import {
     TCard as CardType,
     TGameState,
@@ -17,82 +17,62 @@ import { PlayerBox } from './PlayerBox'
 
 export type TPlayerPosition = 'dealer' | 'small_blind' | 'big_blind' | undefined
 
-const styleForIndex: (playerContainerHeight: number) => {
-    top?: number
-    bottom?: number
-    left?: string
-    right?: string
-    transform?: string
-}[] = (playerContainerHeight) => [
-    /*
-    4   5   6
-3               7
-2               8
-    1   0   9
-(CURRENT PLAYER IS 0)
-      */
-    {
-        // 0 - human player
-        bottom: -playerContainerHeight * 0.8,
-        left: '50%',
-        transform: 'translateX(-50%)',
-    },
-    {
-        // 1
-        bottom: -playerContainerHeight / 2,
-        left: '25%',
-        transform: 'translateX(-25%)',
-    },
-    {
-        // 2
-        bottom: -playerContainerHeight / 4,
-        left: '0%',
-        transform: 'translateX(0%)',
-    },
-    {
-        // 3
-        top: -playerContainerHeight / 4,
-        left: '0%',
-        transform: 'translateX(0%)',
-    },
-    {
-        // 4
-        top: -playerContainerHeight / 2,
-        left: '25%',
-        transform: 'translateX(-25%)',
-    },
-    {
-        // 5
-        top: -playerContainerHeight / 2,
-        left: '50%',
-        transform: 'translateX(-50%)',
-    },
-    {
-        // 6
-        top: -playerContainerHeight / 2,
-        left: '75%',
-        transform: 'translateX(-75%)',
-    },
-    {
-        // 7
-        top: -playerContainerHeight / 4,
-        right: '0',
-        transform: 'translateX(0%)',
-    },
-    {
-        // 8
-        bottom: -playerContainerHeight / 4,
-        right: '0',
-        transform: 'translateX(0%)',
-    },
-    {
-        // 9
-        bottom: -playerContainerHeight / 2,
-        left: '75%',
-        transform: 'translateX(-75%)',
-    },
-]
+/*
+                                (columns)
+                1      2       3       4       5       6
+            1          p3      p4      p5      p6
+    (rows)  2   p2                                      p7
+            3          p1       p0     p9      p8
+ */
 
+const gridMapForIndex: {
+    [playerIndex: number]: CSSProperties
+} = {
+    0: {
+        gridColumn: 3,
+        gridRow: 3,
+    },
+    1: {
+        gridColumn: 2,
+        gridRow: 3,
+    },
+    2: {
+        gridColumn: 1,
+        gridRow: 2,
+    },
+    3: {
+        gridColumn: 2,
+        gridRow: 1,
+        paddingTop: '50px',
+    },
+    4: {
+        gridColumn: 3,
+        gridRow: 1,
+        paddingTop: '50px',
+    },
+    5: {
+        gridColumn: 4,
+        gridRow: 1,
+        paddingTop: '50px',
+    },
+    6: {
+        gridColumn: 5,
+        gridRow: 1,
+        paddingTop: '50px',
+    },
+    7: {
+        gridColumn: 6,
+        gridRow: 2,
+    },
+    8: {
+        gridColumn: 5,
+        gridRow: 3,
+    },
+    9: {
+        gridColumn: 4,
+        gridRow: 3,
+    },
+}
 export default function Player({
     player,
     playerIndex,
@@ -117,7 +97,8 @@ export default function Player({
     onAction: (action: TPlayerAction, playerIndex: number) => void
 }) {
     const { action_on } = gameState
-    const baseContainerClass = 'player-container'
+    const baseContainerClass =
+        'player-container' + (playerIndex !== 0 ? '' : ' human-player')
 
     const [playerContainerClass, setPlayerContainerClass] =
         React.useState(baseContainerClass)
@@ -194,8 +175,6 @@ export default function Player({
                         action_on: (action_on + 1) % gameState.players.length,
                     })
                     return
-                } else {
-                    setPlayerContainerClass(baseContainerClass + ' thinking')
                 }
             }
         }
@@ -211,13 +190,7 @@ export default function Player({
             className={playerContainerClass}
             ref={playerContainerRef}
             style={{
-                bottom: styleForIndex(playerContainerHeight)[playerIndex]
-                    ?.bottom,
-                top: styleForIndex(playerContainerHeight)[playerIndex]?.top,
-                left: styleForIndex(playerContainerHeight)[playerIndex]?.left,
-                right: styleForIndex(playerContainerHeight)[playerIndex]?.right,
-                transform: styleForIndex(playerContainerHeight)[playerIndex]
-                    ?.transform,
+                ...gridMapForIndex[playerIndex],
             }}
         >
             <PlayerPositionAndWinnings
@@ -244,13 +217,8 @@ export default function Player({
             className={playerContainerClass}
             ref={playerContainerRef}
             style={{
-                bottom: styleForIndex(playerContainerHeight)[playerIndex]
-                    ?.bottom,
-                top: styleForIndex(playerContainerHeight)[playerIndex]?.top,
-                left: styleForIndex(playerContainerHeight)[playerIndex]?.left,
-                right: styleForIndex(playerContainerHeight)[playerIndex]?.right,
-                transform: styleForIndex(playerContainerHeight)[playerIndex]
-                    ?.transform,
+                ...gridMapForIndex[playerIndex],
+                height: 'fit-content',
             }}
         >
             <PlayerBox

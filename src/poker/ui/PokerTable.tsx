@@ -97,35 +97,33 @@ export default function PokerTable() {
                         </span>
                     </div>
                 </div>
-                <div className="players-container">
-                    {gameState.players.slice(0, 10).map((player, index) => {
-                        const cardsOnTop = index <= 2 || index >= 8
+                {gameState.players.slice(0, 10).map((player, index) => {
+                    const cardsOnTop = index <= 2 || index >= 8
 
-                        return (
-                            <Player
-                                key={index}
-                                player={player}
-                                playerIndex={index}
-                                gameState={gameState}
-                                setGameState={setGameState}
-                                position={positionOfPlayer(index, gameState)}
-                                showCardsOnTop={cardsOnTop}
-                                allowedToRaise={allowedToRaise}
-                                currentHighBet={currentHighBet}
-                                minBetOrRaiseAmount={minBet}
-                                onAction={(a, playerIndex) =>
-                                    onAction(
-                                        a,
-                                        playerIndex,
-                                        gameState,
-                                        setGameState,
-                                        currentHighBet
-                                    )
-                                }
-                            />
-                        )
-                    })}
-                </div>
+                    return (
+                        <Player
+                            key={index}
+                            player={player}
+                            playerIndex={index}
+                            gameState={gameState}
+                            setGameState={setGameState}
+                            position={positionOfPlayer(index, gameState)}
+                            showCardsOnTop={cardsOnTop}
+                            allowedToRaise={allowedToRaise}
+                            currentHighBet={currentHighBet}
+                            minBetOrRaiseAmount={minBet}
+                            onAction={(a, playerIndex) =>
+                                onAction(
+                                    a,
+                                    playerIndex,
+                                    gameState,
+                                    setGameState,
+                                    currentHighBet
+                                )
+                            }
+                        />
+                    )
+                })}
             </div>
         </div>
     )
