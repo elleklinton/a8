@@ -1,15 +1,23 @@
 import { ChangeEventHandler, useEffect, useState } from 'react'
 import { ActionButton } from './ActionButton'
 import { TOnAction } from '../player/PlayerActions'
+import { prettifyAmount } from '../../game-engine/game-state-utils'
+import { TPlayerAction, TPlayerActionType } from '../../types'
 
 export function Slider({
     actionName,
+    actionValue,
+    stackSize,
+    onAction,
     value,
     setValue,
     minValue,
     maxValue,
 }: {
     actionName: string
+    actionValue: TPlayerActionType
+    stackSize: number
+    onAction: TOnAction
     value: number
     setValue: (value: number) => void
     minValue: number
@@ -46,9 +54,20 @@ export function Slider({
                 onChange={handleChange}
             />
             <div style={{ left: position }} className="slider-text">
-                {actionName + ':'}
-                <br />
-                {value}
+                {/*{actionName + ':'}*/}
+                {/*<br />*/}
+                {/*{prettifyAmount(value)}*/}
+                <ActionButton
+                    onClick={() => {
+                        onAction({
+                            type: value === maxValue ? 'all_in' : actionValue,
+                            amount: value,
+                        })
+                    }}
+                >
+                    {(value === maxValue ? 'ALL IN' : actionName) +
+                        `: ${prettifyAmount(value)}`}
+                </ActionButton>
             </div>
         </div>
     )
@@ -69,22 +88,15 @@ export function BetBar({
     return (
         <div className="player-actions-bet-container">
             <Slider
+                onAction={onAction}
+                stackSize={stackSize}
                 actionName={'Bet'}
+                actionValue={'bet'}
                 value={value}
                 setValue={setValue}
                 minValue={minBet}
                 maxValue={stackSize}
             />
-            <ActionButton
-                onClick={() => {
-                    onAction({
-                        type: value === stackSize ? 'all_in' : 'bet',
-                        amount: value,
-                    })
-                }}
-            >
-                {value === stackSize ? 'ALL IN' : 'Bet'}
-            </ActionButton>
         </div>
     )
 }
@@ -112,25 +124,15 @@ export function RaiseBar({
     return allowedToRaise ? (
         <div className="player-actions-bet-container">
             <Slider
+                onAction={onAction}
+                stackSize={stackSize}
+                actionValue={'raise'}
                 actionName={'Raise To'}
                 value={value}
                 setValue={setValue}
                 minValue={minRaiseBet}
                 maxValue={stackSize + currentPlayerBet}
             />
-            <ActionButton
-                onClick={() => {
-                    onAction({
-                        type:
-                            value === stackSize + currentPlayerBet
-                                ? 'all_in'
-                                : 'raise',
-                        amount: value,
-                    })
-                }}
-            >
-                {value === stackSize + currentPlayerBet ? 'ALL IN' : 'Raise'}
-            </ActionButton>
         </div>
     ) : (
         <div className="player-actions-bet-container">

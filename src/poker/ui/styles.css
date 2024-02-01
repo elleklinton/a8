@@ -1,12 +1,20 @@
 :root {
-    --poker-table-width: 80vw;
-    --poker-table-height: 25vw;
+    --poker-table-width: 90vw;
+    --poker-table-height: 90vh;
+    --poker-table-margin-top-bottom: calc(10vh / 2);
+    --player-container-height: calc(
+        (
+                var(--poker-table-height) -
+                    (2 * var(--poker-table-margin-top-bottom)) -
+                    (5 * var(--default-padding))
+            ) / 3
+    );
 
     --blur-amount: 10px;
 
-    --card-height: 4.5vw;
-    --card-width: 3.2vw;
-    --card-font-size: 1.7vw;
+    --card-height: 80px;
+    --card-width: 55px;
+    --card-font-size: 28px;
 
     --default-padding: 10px;
 }
@@ -20,40 +28,53 @@
     /*width: 100%;*/
     /*min-height: 90vh;*/
     min-width: 100%;
-    max-height: 90vh;
+    max-height: var(--poker-table-height);
+    margin-top: var(--poker-table-margin-top-bottom);
+    margin-bottom: var(--poker-table-margin-top-bottom);
 }
 
 .poker-table {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 10px;
-    padding: 10px;
-    /*flex*/
+    gap: var(--default-padding);
+    /*padding: var(--default-padding);*/
     justify-content: center;
     align-items: center;
     border-radius: calc(var(--poker-table-height) / 2);
-    width: 90vw;
-    height: 90vh;
-    min-height: 100vh;
-    position: relative;
-    margin-left: auto; /* Center the table on the page */
-    margin-right: auto; /* Center the table on the page */
+    width: var(--poker-table-width);
+    height: var(--poker-table-height);
+    max-height: 100vh;
     backdrop-filter: blur(var(--blur-amount));
     background-color: rgba(0, 0, 0, 0.1);
     border: 1px solid black;
-    /*margin-top: 200px;*/
 }
 
-.community-cards {
+.table-center-container {
     display: flex;
-    /*position: absolute;*/
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     grid-column: 3 / span 2; /* Span the middle two columns */
     grid-row: 2; /* Middle row */
     justify-self: center;
     align-self: center;
+    background-color: var(--color-dark-grey);
+    height: fit-content;
+    /*padding: var(--default-padding);*/
+    border-radius: calc(var(--card-width) / 2);
+    border: 1px solid black;
+}
+
+.community-cards-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    justify-self: center;
+    align-self: center;
+    height: fit-content;
+    padding: 0 var(--default-padding) var(--default-padding)
+        var(--default-padding);
 }
 
 .table-pot-420 {
@@ -66,6 +87,19 @@
     justify-content: center;
     align-items: center;
     position: relative;
+}
+
+.blinds {
+    color: white;
+    font-weight: normal;
+    font-style: italic;
+    display: flex;
+    white-space: nowrap;
+    border-radius: calc(var(--card-height) / 2);
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: var(--default-padding);
 }
 
 .card {
@@ -87,7 +121,7 @@
 }
 
 .card.hidden {
-    padding: 0;
+    /*    Make image fit fully*/
 }
 
 .card-value,
@@ -99,8 +133,8 @@
 }
 
 .card-value {
-    height: 50%; /* Half the height of the card */
-    font-size: var(--card-font-size); /* Adjust as needed */
+    height: calc(var(--card-height) / 2);
+    font-size: var(--card-font-size);
     display: flex;
     justify-content: center;
     align-items: flex-end; /* Align to bottom of the top half */
@@ -112,7 +146,7 @@
     color: red; /* Default color, it changes for different suits */
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Align to top of the bottom half */
+    align-items: flex-end; /* Align to top of the bottom half */
 }
 
 .hearts,
@@ -125,37 +159,15 @@
     color: black;
 }
 
-.card-back {
-    width: 100%;
+.player-grid-box {
+    min-height: var(--player-container-height);
+    max-height: var(--player-container-height);
     height: 100%;
-    background-color: #1a1a1a; /* Dark color for card back */
-    /*border-radius: inherit;*/
-    /* Add more styling for the card back if needed */
+    padding: 0;
+    display: flex;
+    /*overflow-y: visible;*/
+    /*align-self: flex-end;*/
 }
-
-/*!* Add media query for smaller screens to adjust card size *!*/
-/*@media (max-width: 768px) {*/
-/*    .card {*/
-/*        width: 10vh;*/
-/*        height: 14vh;*/
-/*    }*/
-/*    .card-rank,*/
-/*    .card-suit {*/
-/*        font-size: 8vh; !* Adjust as needed *!*/
-/*    }*/
-/*}*/
-
-/*.players-container {*/
-/*    display: grid;*/
-/*    grid-template-columns: 1fr auto 1fr;*/
-/*    grid-template-rows: 1fr auto 1fr;*/
-/*    height: 100vh;*/
-/*    width: 100%;*/
-/*    gap: 10px;*/
-/*    padding: 10px;*/
-/*    border-radius: calc(var(--poker-table-height) / 2);*/
-/*    position: absolute;*/
-/*}*/
 
 .player-container {
     display: flex;
@@ -164,10 +176,11 @@
     justify-content: center;
     align-items: center;
     position: relative;
-    /*width: calc(4 * var(--card-width));*/
+    overflow: visible;
+    align-self: flex-end;
 }
 
-.player-container.winner {
+.winner {
     border: 4px solid var(--color-green-light);
     border-radius: calc(var(--card-width) / 2);
     padding: var(--default-padding);
@@ -176,7 +189,7 @@
     z-index: 100;
 }
 
-.player-container.thinking {
+.thinking {
     border: 2px solid var(--color-yellow-light);
     border-radius: calc(var(--card-width) / 2);
     padding: var(--default-padding);
@@ -185,13 +198,13 @@
     z-index: 100;
 }
 
-.player-container.human-player {
+.human-player {
     border: 2px solid white;
     border-radius: calc(var(--card-width) / 2);
-    padding: var(--default-padding);
     backdrop-filter: blur(10px);
     background-color: var(--color-dark-grey);
     z-index: 100;
+    padding: var(--default-padding);
 }
 
 .player {
@@ -209,7 +222,7 @@
     border: 1px solid #000;
     /*border-radius: 15px; !* Half of the player element height for rounded corners *!*/
     background-color: white;
-    padding: var(--default-padding);
+    padding: calc(var(--default-padding) / 2);
     color: black;
 }
 
@@ -220,26 +233,31 @@
 
 .folded-text {
     font-style: italic;
+    font-weight: bold;
 }
 
 .player-cards {
     display: flex;
     flex-direction: row;
-    margin-top: 10px;
+    margin-top: calc(var(--default-padding) / 2);
 }
 
-.position-and-winnings-container {
+.position-winnings-action-container {
+    margin-bottom: var(--default-padding);
+}
+
+.position-or-winnings-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     justify-content: center;
     align-items: center;
+    margin-top: var(--default-padding);
 }
 
 .player-winnings {
     display: flex;
     flex-direction: row;
-    margin-bottom: 10px;
     color: var(--color-green);
 }
 
@@ -265,8 +283,6 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
 }
 
 .player-action {
@@ -299,6 +315,13 @@
 
 .player-info-container {
     display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.player-info-container-column {
+    display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -310,8 +333,8 @@
     border-radius: 50%;
     background-color: white;
     border: 1px solid black;
-    margin-bottom: 10px;
-    margin-top: 10px;
+    /*margin-bottom: calc(var(--default-padding) / 2);*/
+    /*margin-top: calc(var(--default-padding) / 2);*/
 }
 
 .player-actions-container {
@@ -319,7 +342,7 @@
     flex-direction: column;
     justify-content: right;
     align-items: center;
-    margin-top: 10px;
+    margin-top: var(--default-padding);
 }
 
 .player-actions-bet-container {
@@ -339,23 +362,31 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: calc(var(--font-size) * 0.85);
+    font-family: Futura, 'Trebuchet MS', Arial, sans-serif;
+    font-weight: normal;
 }
 
 .fold-button {
-    margin-top: 10px;
+    margin-top: var(--default-padding);
     background-color: var(--color-red);
+    color: white;
 }
 
 .check-button {
-    margin-top: 10px;
+    margin-top: var(--default-padding);
+    background-color: var(--color-yellow);
+}
+
+.call-button {
+    margin-top: var(--default-padding);
     background-color: var(--color-yellow);
 }
 
 .slider-container {
     position: relative;
     /*width: calc(var(--card-width) * 2);*/
-    margin-top: 20px;
-    margin-right: 10px;
+    margin-top: calc(2 * var(--default-padding));
+    margin-right: var(--default-padding);
 }
 
 .slider {

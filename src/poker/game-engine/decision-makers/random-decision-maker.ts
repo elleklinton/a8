@@ -12,7 +12,7 @@ export class RandomDecisionMaker extends BaseDecisionMaker {
             'call',
             // 'all_in',
         ]
-        // Allow betting 10% of the time
+        // Allow betting T% of the time
         if (Math.random() < 0.1) {
             allowedActions.push('bet')
         }
@@ -28,21 +28,33 @@ export class RandomDecisionMaker extends BaseDecisionMaker {
             // for testing make big blind always raise and small blind always fold
             if (playerIndex !== gameState.big_blind_position) {
                 allowedActions.push('fold')
-                if (playerIndex === gameState.small_blind_position) {
-                    allowedActions = allowedActions.filter((a) => a !== 'call')
-                }
+                // if (playerIndex === gameState.small_blind_position) {
+                //     allowedActions = allowedActions.filter((a) => a !== 'call')
+                // }
             }
+            // big blind more likely to raise
             if (playerIndex === gameState.big_blind_position) {
                 allowedActions.push('raise')
-                allowedActions = allowedActions.filter((a) => a !== 'check')
+                // allowedActions = allowedActions.filter((a) => a !== 'check')
             }
         }
 
-        return super
+        const rv = super
             .availableActions(gameState, playerIndex)
             .filter((action) => {
                 return allowedActions.includes(action.type)
             })
+
+        if (rv.length === 0) {
+            console.warn('Warning: no available actions available!!!')
+            console.warn('allowedActions', allowedActions)
+            console.warn(
+                'availableActions',
+                super.availableActions(gameState, playerIndex)
+            )
+        }
+
+        return rv
     }
 
     static async makeDecision(
@@ -53,10 +65,6 @@ export class RandomDecisionMaker extends BaseDecisionMaker {
 
         // wait to simulate thinking
         await new Promise((res) => setTimeout(res, 700))
-
-        if (actions.length === 0) {
-            console.warn('Warning: no available actions available!!!')
-        }
 
         return actions[Math.floor(Math.random() * actions.length)]
     }

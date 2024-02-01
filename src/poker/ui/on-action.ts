@@ -3,8 +3,11 @@ import {
     dealTableCards,
     initializeRound,
     isBettingRoundOver,
+    terminalStates,
 } from '../game-engine/game-state-utils'
 import { PokerRoundResult } from '../game-engine/poker-hand-calculations/objects/poker_round/poker-round-result'
+import { Simulate } from 'react-dom/test-utils'
+import play = Simulate.play
 
 function commitBets(gameState: TGameState) {
     for (const player of gameState.players) {
@@ -13,7 +16,18 @@ function commitBets(gameState: TGameState) {
             player.committedBet += playerBetAmount
             player.currentBet = 0
         }
-        player.action = undefined
+        if (player.action?.type !== 'all_in') {
+            player.action = undefined
+        } else if (player.action?.type === 'all_in') {
+            player.action = {
+                ...player.action,
+                amount: 0,
+            }
+        }
+
+        if (player.stackSize === 0 && player.committedBet > 0) {
+            player.state = 'all-in'
+        }
     }
 }
 
@@ -24,13 +38,19 @@ function updatePlayerStatesOnAction(
     playerIndex: number,
     currentHighBet: number
 ): number {
-    // Returns the new currentHighBet
-    if (player.state === 'folded') {
+    // Don't update player action if they are already out
+    if (player.state === 'folded' || player.state === 'out') {
         return currentHighBet
     }
 
     player.action = action
-    newState.round_history = [...newState.round_history, action]
+    newState.round_history = [
+        ...newState.round_history,
+        {
+            ...action,
+            playerIndex,
+        },
+    ]
 
     const currentPlayerBet = player.currentBet ?? 0
 
@@ -161,6 +181,19 @@ function calculateWinnings(gameState: TGameState): TPlayerWinnings {
         }
     }
 
+    const isShowdown =
+        gameState.players.filter(
+            (p) => p.state !== 'folded' && p.state !== 'out'
+        ).length > 1
+
+    console.log('isShowdown', isShowdown)
+
+    gameState.players.map((player, index) => {
+        if (player.state !== 'folded' && player.state !== 'out') {
+            player.showCards = isShowdown
+        }
+    })
+
     return playerWinnings
 }
 
@@ -199,6 +232,40 @@ function calculateNextRoundPositions(gameState: TGameState) {
     }
 }
 
+function bigBlindForRound(roundNumber: number) {
+    // First blind level is 200
+    // Increment blinds every 5 hands
+    // Blind Level | Big Blind | Multiplier of previous
+    // 0           | 200       | -
+    // 1           | 400       | 2
+    // 2           | 800       | 2
+    // 3           | 1000      | 1.25
+    // 4           | 2000      | 2
+    // 5           | 4000      | 2
+    // 6           | 8000      | 2
+    // 7           | 10000     | 1.25
+    // 8           | 20000    | 2
+    // ...and so on
+
+    let bigBlind = 200
+    let round = 0
+    const roundsPerBlind = 1
+
+    let blindIncreaseMultipliers = [1.25, 2, 2, 2]
+    let blindIncreaseIndex = 2
+
+    while (round < roundNumber) {
+        if (round % roundsPerBlind === 0) {
+            bigBlind *= blindIncreaseMultipliers[blindIncreaseIndex]
+            blindIncreaseIndex =
+                (blindIncreaseIndex + 1) % blindIncreaseMultipliers.length
+        }
+        round++
+    }
+
+    return bigBlind
+}
+
 function onFinalCompletion(newState: TGameState) {
     // Mutates newState
     console.log(
@@ -220,6 +287,8 @@ function onFinalCompletion(newState: TGameState) {
     distributeWinnings(newState, playerWinnings)
 
     newState.winners = playerWinnings
+    newState.round_number += 1
+    newState.big_blind = bigBlindForRound(newState.round_number)
 }
 
 export function startNextRound(
@@ -239,13 +308,17 @@ export function startNextRound(
         ...gameState.round_history,
         {
             type: 'new_round',
+            playerIndex: -1,
         },
     ]
 
     for (const player of gameState.players) {
         if (player.stackSize === 0) {
             player.state = 'out'
+        } else {
+            player.state = 'active'
         }
+        player.action = undefined
     }
 
     initializeRound(gameState)
@@ -299,6 +372,7 @@ async function onRoundCompletion(
         {
             type: 'table_event',
             cards_dealt: newCards,
+            playerIndex: -1,
         },
     ]
 
@@ -306,15 +380,16 @@ async function onRoundCompletion(
         console.log('All players all-in. Dealing final cards with delay')
         newState.action_on = -1
 
-        await new Promise((res) => setTimeout(res, 300))
-
+        await new Promise((res) => setTimeout(res, 700))
+        newState = { ...newState }
+        setGameState(newState)
         return onRoundCompletion(newState, setGameState)
     }
 
     newState.action_on = newState.small_blind_position
 }
 
-export function onAction(
+export async function onAction(
     action: TPlayerAction,
     playerIndex: number,
     gameState: TGameState,
@@ -331,7 +406,13 @@ export function onAction(
         currentHighBet
     )
 
-    console.log('[Player Action] ', player.name, player.action)
+    const actionAmount = player.action?.amount
+        ? `[${player.action.amount}]`
+        : ''
+    console.log(
+        `[Player Action][${player.action?.type}]${actionAmount} ${player.name}`
+    )
+    console.log(666, gameState.round_history)
 
     if (
         !isBettingRoundOver(

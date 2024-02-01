@@ -22,8 +22,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "start:dev": "npm run format && react-scripts start",
+    "start": "REACT_APP_STRICT_MODE=true react-scripts start",
+    "start:dev": "npm run format && npm run start",
+    "start:static": "npm run build && serve -s build",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
@@ -61,6 +62,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "gh-pages": "^6.1.1",
     "prettier": "^3.1.1",
+    "serve": "^14.2.1",
     "ts-node": "^10.9.2"
   }
 }

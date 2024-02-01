@@ -89,7 +89,7 @@ export class Rank extends BaseComparable<Rank> {
                 return RANK_EIGHT
             case '9':
                 return RANK_NINE
-            case '10':
+            case 'T':
                 return RANK_TEN
             case 'J':
                 return RANK_JACK

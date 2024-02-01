@@ -10,7 +10,7 @@ export type TCardValue =
     | '7'
     | '8'
     | '9'
-    | '10'
+    | 'T'
     | 'J'
     | 'Q'
     | 'K'
@@ -27,7 +27,7 @@ export const ALL_RANKS: TCardValue[] = [
     'K',
     'Q',
     'J',
-    '10',
+    'T',
     '9',
     '8',
     '7',
@@ -51,11 +51,16 @@ export type TPlayerActionType =
     | 'table_event'
     | 'dealt_cards'
     | 'new_round'
+
 export type TPlayerAction = {
     type: TPlayerActionType
     amount?: number
     cards_dealt?: TCard[]
     isIncompleteRaise?: boolean
+}
+
+export type TRoundHistoryAction = TPlayerAction & {
+    playerIndex: number
 }
 
 export interface TPlayer {
@@ -80,6 +85,7 @@ export interface TGameState {
     dealer_position: number // playerIndex of dealer
     small_blind_position: number
     big_blind: number
-    round_history: TPlayerAction[]
+    round_history: TRoundHistoryAction[]
     winners: TPlayerWinnings
+    round_number: number
 }

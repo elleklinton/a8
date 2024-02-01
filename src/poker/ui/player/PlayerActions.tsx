@@ -56,7 +56,10 @@ export function PlayerActions({
                 minBet={minBet}
                 allowedToRaise={allowedToRaise}
             />
-            <FoldButton onAction={onAction} />
+            <FoldButton
+                onAction={onAction}
+                prevAmount={player.action?.amount}
+            />
         </div>
     )
 }

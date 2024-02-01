@@ -1,26 +1,73 @@
-import React, { ReactElement, useEffect, useRef } from 'react'
+import React, { CSSProperties, ReactElement, useEffect, useRef } from 'react'
 import { TGameState } from '../types'
-import Card from './Card'
+import CardVisible from './CardVisible'
 import './styles.css'
-import Player, { TPlayerPosition } from './player/Player'
+import Player, { isBottomPlayer, TPlayerPosition } from './player/Player'
 import { getInitialGameState } from '../game-engine/initial-game-state'
 import { isFinalRoundOver, onAction } from './on-action'
 import { isBettingRoundOver } from '../game-engine/game-state-utils'
+import { TableCenter } from './table-center/TableCenter'
+import { PositionWinningsAction } from './player/PositionWinningsAction'
 
-function positionOfPlayer(
-    playerIndex: number,
-    gameState: TGameState
-): TPlayerPosition {
-    switch (playerIndex) {
-        case gameState.dealer_position:
-            return 'dealer'
-        case gameState.small_blind_position:
-            return 'small_blind'
-        case gameState.big_blind_position:
-            return 'big_blind'
-        default:
-            return undefined
-    }
+/*
+                                (columns)
+                1      2       3       4       5       6
+            1          p2      p3      p4      p5
+    (rows)  2   p1                                      p6
+            3          p0       p9     p8      p7
+ */
+
+const gridMapForIndex: {
+    [playerIndex: number]: CSSProperties
+} = {
+    9: {
+        gridColumn: 3,
+        gridRow: 3,
+        // flexDirection: 'column-reverse',
+    },
+    0: {
+        gridColumn: 2,
+        gridRow: 3,
+        // flexDirection: 'column-reverse',
+    },
+    1: {
+        gridColumn: 1,
+        gridRow: 2,
+    },
+    2: {
+        gridColumn: 2,
+        gridRow: 1,
+        // paddingTop: '50px',
+    },
+    3: {
+        gridColumn: 3,
+        gridRow: 1,
+        // paddingTop: '50px',
+    },
+    4: {
+        gridColumn: 4,
+        gridRow: 1,
+        // paddingTop: '50px',
+    },
+    5: {
+        gridColumn: 5,
+        gridRow: 1,
+        // paddingTop: '50px',
+    },
+    6: {
+        gridColumn: 6,
+        gridRow: 2,
+    },
+    7: {
+        gridColumn: 5,
+        gridRow: 3,
+        // flexDirection: 'column-reverse',
+    },
+    8: {
+        gridColumn: 4,
+        gridRow: 3,
+        // flexDirection: 'column-reverse',
+    },
 }
 
 type TBettingState = {
@@ -84,44 +131,35 @@ export default function PokerTable() {
     return (
         <div className={'poker-table-container'}>
             <div className="poker-table">
-                <div className="community-cards">
-                    {gameState.communityCards.map((card, index) => (
-                        <Card key={index} card={card} isVisible={true} />
-                    ))}
-                    <div className="table-pot-420">
-                        <span>
-                            Pot:
-                            <br />
-                            <br />
-                            {Math.round(pot)}
-                        </span>
-                    </div>
-                </div>
+                <TableCenter gameState={gameState} pot={pot} />
                 {gameState.players.slice(0, 10).map((player, index) => {
-                    const cardsOnTop = index <= 2 || index >= 8
-
                     return (
-                        <Player
+                        <div
                             key={index}
-                            player={player}
-                            playerIndex={index}
-                            gameState={gameState}
-                            setGameState={setGameState}
-                            position={positionOfPlayer(index, gameState)}
-                            showCardsOnTop={cardsOnTop}
-                            allowedToRaise={allowedToRaise}
-                            currentHighBet={currentHighBet}
-                            minBetOrRaiseAmount={minBet}
-                            onAction={(a, playerIndex) =>
-                                onAction(
-                                    a,
-                                    playerIndex,
-                                    gameState,
-                                    setGameState,
-                                    currentHighBet
-                                )
-                            }
-                        />
+                            className={'player-grid-box'}
+                            style={{
+                                ...gridMapForIndex[index],
+                            }}
+                        >
+                            <Player
+                                player={player}
+                                playerIndex={index}
+                                gameState={gameState}
+                                setGameState={setGameState}
+                                currentHighBet={currentHighBet}
+                                minBetOrRaiseAmount={minBet}
+                                allowedToRaise={allowedToRaise}
+                                onAction={async (action, playerIndex) =>
+                                    await onAction(
+                                        action,
+                                        playerIndex,
+                                        gameState,
+                                        setGameState,
+                                        currentHighBet
+                                    )
+                                }
+                            />
+                        </div>
                     )
                 })}
             </div>

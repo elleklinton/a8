@@ -5,81 +5,46 @@ import {
     TPlayer,
     TPlayerAction,
 } from '../../types'
-import Card from '../Card'
+import CardVisible from '../CardVisible'
 import { titleCase } from '../../../utils'
 import { PlayerActions } from './PlayerActions'
 import { RandomDecisionMaker } from '../../game-engine/decision-makers/random-decision-maker'
 
 import { playerCanAct } from '../../game-engine/game-state-utils'
-import { PlayerPositionAndWinnings } from './PlayerPositionAndWinnings'
-import { PlayerStackAndAction } from './PlayerStackAndAction'
+import { PlayerWinnings } from './PlayerWinnings'
+import { PlayerActionTaken } from './PlayerActionTaken'
 import { PlayerBox } from './PlayerBox'
+import { PlayerPosition } from './PlayerPosition'
+import { PositionWinningsAction } from './PositionWinningsAction'
+import { onAction } from '../on-action'
 
 export type TPlayerPosition = 'dealer' | 'small_blind' | 'big_blind' | undefined
 
-/*
-                                (columns)
-                1      2       3       4       5       6
-            1          p3      p4      p5      p6
-    (rows)  2   p2                                      p7
-            3          p1       p0     p9      p8
- */
-
-const gridMapForIndex: {
-    [playerIndex: number]: CSSProperties
-} = {
-    0: {
-        gridColumn: 3,
-        gridRow: 3,
-    },
-    1: {
-        gridColumn: 2,
-        gridRow: 3,
-    },
-    2: {
-        gridColumn: 1,
-        gridRow: 2,
-    },
-    3: {
-        gridColumn: 2,
-        gridRow: 1,
-        paddingTop: '50px',
-    },
-    4: {
-        gridColumn: 3,
-        gridRow: 1,
-        paddingTop: '50px',
-    },
-    5: {
-        gridColumn: 4,
-        gridRow: 1,
-        paddingTop: '50px',
-    },
-    6: {
-        gridColumn: 5,
-        gridRow: 1,
-        paddingTop: '50px',
-    },
-    7: {
-        gridColumn: 6,
-        gridRow: 2,
-    },
-    8: {
-        gridColumn: 5,
-        gridRow: 3,
-    },
-    9: {
-        gridColumn: 4,
-        gridRow: 3,
-    },
+export function isBottomPlayer(playerIndex: number) {
+    return playerIndex <= 1 || playerIndex >= 6
 }
+
+function positionOfPlayer(
+    playerIndex: number,
+    gameState: TGameState
+): TPlayerPosition {
+    switch (playerIndex) {
+        case gameState.dealer_position:
+            return 'dealer'
+        case gameState.small_blind_position:
+            return 'small_blind'
+        case gameState.big_blind_position:
+            return 'big_blind'
+        default:
+            return undefined
+    }
+}
+
 export default function Player({
     player,
     playerIndex,
     gameState,
     setGameState,
-    position = undefined,
-    showCardsOnTop = true,
     currentHighBet,
     minBetOrRaiseAmount,
     allowedToRaise,
@@ -89,22 +54,20 @@ export default function Player({
     playerIndex: number
     gameState: TGameState
     setGameState: (gameState: TGameState) => void
-    showCardsOnTop: boolean
-    position?: TPlayerPosition
     currentHighBet?: number
     minBetOrRaiseAmount: number
     allowedToRaise: boolean
     onAction: (action: TPlayerAction, playerIndex: number) => void
 }) {
     const { action_on } = gameState
-    const baseContainerClass =
-        'player-container' + (playerIndex !== 0 ? '' : ' human-player')
+    const baseContainerClass = playerIndex !== 0 ? '' : ' human-player'
 
     const [playerContainerClass, setPlayerContainerClass] =
         React.useState(baseContainerClass)
     const playerContainerRef = React.useRef<HTMLDivElement>(null)
     const [playerContainerHeight, setPlayerContainerHeight] = React.useState(0)
     const isFirstRun = useRef(true)
+    const isStrictMode = process.env.REACT_APP_STRICT_MODE === 'true'
 
     // Don't show thinking for human player
     const showThinkingText =
@@ -132,8 +95,8 @@ export default function Player({
 
     // For AI players, do action automatically
     useEffect(() => {
-        // Fix bug in React where this is triggered twice on first render
-        if (isFirstRun.current) {
+        // Fix bug in React where this is triggered twice on first render when in strict mode
+        if (isStrictMode && isFirstRun.current) {
             isFirstRun.current = false
             console.log('Skipping duplicate trigger of useEffect run!')
             return
@@ -185,60 +148,47 @@ export default function Player({
         })
     }, [action_on, gameState.communityCards.length])
 
-    return showCardsOnTop ? (
+    const alignSelf = isBottomPlayer(playerIndex) ? 'flex-end' : 'flex-start'
+
+    return (
         <div
-            className={playerContainerClass}
-            ref={playerContainerRef}
+            className="player-container"
             style={{
-                ...gridMapForIndex[playerIndex],
+                alignSelf,
             }}
         >
-            <PlayerPositionAndWinnings
-                position={position}
-                location={'top'}
-                maybeWin={gameState.winners[playerIndex]}
-            />
-            <PlayerStackAndAction player={player} stackOnTop={false} />
-            <PlayerBox
-                gameState={gameState}
-                setGameState={setGameState}
-                playerIndex={playerIndex}
-                showThinkingText={showThinkingText}
-                action_on={action_on}
-                currentHighBet={currentHighBet}
-                allowedToRaise={allowedToRaise}
-                minBetOrRaiseAmount={minBetOrRaiseAmount}
-                onAction={onAction}
-                cardsOnTop={false}
-            />
-        </div>
-    ) : (
-        <div
-            className={playerContainerClass}
-            ref={playerContainerRef}
-            style={{
-                ...gridMapForIndex[playerIndex],
-                height: 'fit-content',
-            }}
-        >
-            <PlayerBox
-                gameState={gameState}
-                setGameState={setGameState}
-                playerIndex={playerIndex}
-                showThinkingText={showThinkingText}
-                action_on={action_on}
-                currentHighBet={currentHighBet}
-                allowedToRaise={allowedToRaise}
-                minBetOrRaiseAmount={minBetOrRaiseAmount}
-                onAction={onAction}
-                cardsOnTop={false}
-            />
-            <PlayerStackAndAction player={player} stackOnTop={true} />
-            <PlayerPositionAndWinnings
-                position={position}
-                location={'bottom'}
-                maybeWin={gameState.winners[playerIndex]}
-            />
+            {isBottomPlayer(playerIndex) && (
+                <PositionWinningsAction
+                    player={player}
+                    position={positionOfPlayer(playerIndex, gameState)}
+                    gameState={gameState}
+                    playerIndex={playerIndex}
+                    positionOnTop={true}
+                />
+            )}
+            <div className={playerContainerClass} ref={playerContainerRef}>
+                <PlayerBox
+                    gameState={gameState}
+                    setGameState={setGameState}
+                    playerIndex={playerIndex}
+                    showThinkingText={showThinkingText}
+                    action_on={action_on}
+                    currentHighBet={currentHighBet}
+                    allowedToRaise={allowedToRaise}
+                    minBetOrRaiseAmount={minBetOrRaiseAmount}
+                    onAction={onAction}
+                    cardsOnTop={false}
+                />
+            </div>
+            {!isBottomPlayer(playerIndex) && (
+                <PositionWinningsAction
+                    player={player}
+                    position={positionOfPlayer(playerIndex, gameState)}
+                    gameState={gameState}
+                    playerIndex={playerIndex}
+                    positionOnTop={true}
+                />
+            )}
         </div>
     )
 }

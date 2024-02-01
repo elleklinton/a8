@@ -1,5 +1,6 @@
 import { ActionButton } from './ActionButton'
 import { TOnAction } from '../player/PlayerActions'
+import { prettifyAmount } from '../../game-engine/game-state-utils'
 
 export function CallButton({
     currentHighBet,
@@ -19,6 +20,7 @@ export function CallButton({
     if (currentHighBet >= stackSize) {
         return (
             <ActionButton
+                className={'call-button'}
                 onClick={() => {
                     onAction({
                         type: 'all_in',
@@ -26,13 +28,14 @@ export function CallButton({
                     })
                 }}
             >
-                {'Call ' + currentHighBet + ' (all in)'}
+                {'Call ' + prettifyAmount(currentHighBet) + ' (all in)'}
             </ActionButton>
         )
     }
 
     return (
         <ActionButton
+            className={'call-button'}
             onClick={() => {
                 onAction({
                     type: 'call',
@@ -42,7 +45,7 @@ export function CallButton({
         >
             {'Call: ' +
                 (currentPlayerBet !== 0 ? '+' : '') +
-                (currentHighBet - currentPlayerBet)}
+                prettifyAmount(currentHighBet - currentPlayerBet)}
         </ActionButton>
     )
 }

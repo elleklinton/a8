@@ -6,9 +6,14 @@ import {
 } from '../../types'
 import { titleCase } from '../../../utils'
 import React from 'react'
-import Card from '../Card'
+import CardVisible from '../CardVisible'
 import { PlayerActions } from './PlayerActions'
 import { StartNextRound } from './StartNextRound'
+import { PlayerWinnings } from './PlayerWinnings'
+import { PlayerActionTaken } from './PlayerActionTaken'
+import { prettifyAmount } from '../../game-engine/game-state-utils'
+import { isVisible } from '@testing-library/user-event/dist/utils'
+import { CardHidden } from '../CardHidden'
 
 export function PlayerBox({
     gameState,
@@ -39,38 +44,44 @@ export function PlayerBox({
 
     const playerInfo = (
         <div className={'player-info-container'}>
-            {player.state !== 'out' && (
-                <img
-                    className={'player-image'}
-                    src={player.avatar + '?player_index=' + playerIndex}
-                    alt={`${player.name}`}
-                />
-            )}
-            <span>
-                {player.name}
-                {showThinkingText && <br />}
-                {showThinkingText && 'Thinking...'}
-                {player.state === 'folded' && (
-                    <div className="folded-text">Folded</div>
+            <div className={'player-info-container-column'}>
+                {player.state !== 'out' && (
+                    <img
+                        className={'player-image'}
+                        src={player.avatar + '?player_index=' + playerIndex}
+                        alt={`${player.name}`}
+                    />
                 )}
-                {player.state === 'out' && (
-                    <div className="folded-text">Player Out</div>
-                )}
-            </span>
+                <span>
+                    {`${player.name} (${prettifyAmount(player.stackSize)})`}
+                    {showThinkingText && <br />}
+                    {showThinkingText && 'Thinking...'}
+                    {player.state === 'folded' && (
+                        <div className="folded-text">Folded</div>
+                    )}
+                    {player.state === 'out' && (
+                        <div className="folded-text">Player Out</div>
+                    )}
+                </span>{' '}
+            </div>
         </div>
     )
+
+    const isVisible = player.showCards || playerIndex === 0
 
     const playerCards = player.state !== 'folded' && player.state !== 'out' && (
         <div className="player-cards">
             {player.cards.map(
-                (card: CardType, cardIndex: React.Key | null | undefined) => (
-                    <Card
-                        key={cardIndex}
-                        card={card}
-                        // Current player is playerIndex 0 so show always their cards
-                        isVisible={player.showCards || playerIndex === 0}
-                    />
-                )
+                (card: CardType, cardIndex: React.Key | null | undefined) =>
+                    isVisible ? (
+                        <CardVisible
+                            key={cardIndex}
+                            card={card}
+                            // Current player is playerIndex 0 so show always their cards
+                        />
+                    ) : (
+                        <CardHidden key={cardIndex} card={card} />
+                    )
             )}
         </div>
     )

@@ -1,6 +1,18 @@
 import { TCard, TGameState, TPlayer, TPlayerActionType } from '../types'
 import { getFreshShuffledDeck } from './deck'
 
+export function prettifyAmount(n: number) {
+    // Adds commas to numbers
+    return (
+        '$' +
+        Math.round(n)
+            .toString()
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    )
+}
+
+export const terminalStates: TPlayerActionType[] = ['fold', 'all_in']
+
 export function dealCards(gameState: TGameState): TGameState {
     const deck = getFreshShuffledDeck()
     gameState.deck = deck
@@ -31,6 +43,7 @@ export function dealCards(gameState: TGameState): TGameState {
                 ...gameState.round_history,
                 {
                     type: 'dealt_cards',
+                    playerIndex: playerToDeal,
                     cards_dealt: [...gameState.players[playerToDeal].cards],
                 },
             ]
@@ -70,11 +83,11 @@ export function placePlayerBet(
 ): void {
     // MUTATES the player object
     const alreadyBet = player.currentBet ?? 0
-    const newBet = amount - alreadyBet
+    const newBet = Math.min(amount - alreadyBet, player.stackSize)
 
     const betAmount = Math.min(amount, player.stackSize + alreadyBet)
 
-    if (betAmount === player.stackSize) {
+    if (betAmount >= player.stackSize) {
         betType = 'all_in'
     }
 
@@ -87,7 +100,7 @@ export function placePlayerBet(
     }
 }
 
-export function placeBlinds(gameState: TGameState): TGameState {
+export function collectBlinds(gameState: TGameState): TGameState {
     const smallBlindPlayer = gameState.players[gameState.small_blind_position]
 
     const bigBlindPlayer = gameState.players[gameState.big_blind_position]
@@ -106,7 +119,7 @@ export function placeBlinds(gameState: TGameState): TGameState {
 }
 
 export function initializeRound(gameState: TGameState) {
-    placeBlinds(gameState)
+    collectBlinds(gameState)
     dealCards(gameState)
 }
 
@@ -124,8 +137,6 @@ export function playerCanAct(
     if (!player.action) {
         return true
     }
-
-    const terminalStates: TPlayerActionType[] = ['fold', 'all_in']
 
     if (terminalStates.includes(player.action.type)) {
         return false

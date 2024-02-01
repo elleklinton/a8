@@ -2,13 +2,14 @@ import { TGameState, TPlayer } from '../types'
 import _ from 'lodash'
 import { getFreshShuffledDeck } from './deck'
 import { getRandomPersonas, PERSONAS } from './personas'
-import { placeBlinds, dealCards, initializeRound } from './game-state-utils'
+import { collectBlinds, dealCards, initializeRound } from './game-state-utils'
 import { TEST_GAME_STATE } from './initial-game-state-templates'
 
 const START_STACK = 10000
-const START_BIG_BLIND = 100
+const START_BIG_BLIND = 200
 
 const INITIAL_GAME_STATE: TGameState = Object.freeze<TGameState>({
+    round_number: 0,
     deck: [],
     big_blind: START_BIG_BLIND,
     action_on: -1,
@@ -58,10 +59,8 @@ export function getInitialGameState(nPlayers: number): TGameState {
     ]
 
     // Assign random dealer position
-    gameState.dealer_position = 8
-    //     Math.floor(
-    //     Math.random() * gameState.players.length
-    // )
+    gameState.dealer_position = //8
+        Math.floor(Math.random() * gameState.players.length)
     gameState.small_blind_position =
         (gameState.dealer_position + 1) % gameState.players.length
     gameState.big_blind_position =
